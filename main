@@ -1,0 +1,94 @@
+"""
+Module 5 - Simple Neural Network (2-layer, from scratch with NumPy)
+
+Network structure:
+  - 3 input features
+  - Layer 1: 4 nodes (sigmoid)
+  - Layer 2 (output): 1 node (sigmoid)
+"""
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+# ---------------------------------------------------------------------------
+# Activation function and its derivative
+# ---------------------------------------------------------------------------
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+
+def sigmoid_derivative(x):
+    # NOTE: x is expected to be the *output* of sigmoid, i.e. sigmoid(z)
+    return x * (1 - x)
+
+
+# ---------------------------------------------------------------------------
+# Data
+# ---------------------------------------------------------------------------
+X = np.array([[0, 0, 1],
+              [0, 1, 1],
+              [1, 0, 1],
+              [1, 1, 1]])
+
+y = np.array([[0],
+              [1],
+              [1],
+              [0]])
+
+# ---------------------------------------------------------------------------
+# Weight initialization (random, mean ~ 0)
+# ---------------------------------------------------------------------------
+np.random.seed(1)
+w0 = 2 * np.random.random((3, 4)) - 1   # input  -> layer 1
+w1 = 2 * np.random.random((4, 1)) - 1   # layer 1 -> output
+
+# ---------------------------------------------------------------------------
+# Training
+# ---------------------------------------------------------------------------
+errors = []
+
+for i in range(5000):
+
+    # ---- Forward propagation ------------------------------------------------
+    a0 = X                          # input layer
+    a1 = sigmoid(np.dot(a0, w0))    # hidden layer output  (4 x 4)
+    a2 = sigmoid(np.dot(a1, w1))    # network output       (4 x 1)
+
+    # ---- Error in model output ---------------------------------------------
+    output_error = a2 - y
+
+    # Store the error for every epoch
+    errors.append({
+        "epochs": i,
+        "error": np.mean(np.abs(output_error)),
+    })
+
+    # Print the error every 500 steps
+    if (i % 500) == 0:
+        print("Error after " + str(i) + " epochs:" + str(np.mean(np.abs(output_error))))
+
+    # ---- Back propagation ---------------------------------------------------
+    layer2_delta = output_error * sigmoid_derivative(a2)
+    layer1_error = layer2_delta.dot(w1.T)
+    layer1_delta = layer1_error * sigmoid_derivative(a1)
+
+    # ---- Weight update (gradient descent): a^T . layer_delta ---------------
+    w1 -= a1.T.dot(layer2_delta)
+    w0 -= a0.T.dot(layer1_delta)
+
+
+# ---------------------------------------------------------------------------
+# Results
+# ---------------------------------------------------------------------------
+print("\nFinal predictions after training:")
+print(np.round(a2, 4))
+
+# Plot error vs epochs
+pd.DataFrame(errors).plot(x="epochs", y="error", title="Error vs Epochs")
+plt.xlabel("epochs")
+plt.ylabel("mean absolute error")
+plt.tight_layout()
+plt.savefig("error_vs_epochs.png")
+plt.show()
